@@ -1,9 +1,5 @@
-/*
- * File: 103-python.c
- * Auth: Cela
- */
-
 #include <Python.h>
+#include <stdio.h>
 
 void print_python_list(PyObject *p);
 void print_python_bytes(PyObject *p);
@@ -11,40 +7,70 @@ void print_python_float(PyObject *p);
 
 /**
  * print_python_list - Prints basic info about Python lists.
- * @p: A PyObject list object.
+ * @p: A PyObject list.
  */
 void print_python_list(PyObject *p)
 {
-        Py_ssize_t size, alloc, i;
-        const char *type;
-        PyListObject *list = (PyListObject *)p;
-        PyVarObject *var = (PyVarObject *)p;
+    Py_ssize_t size, i;
+    PyObject *item;
 
-        size = var->ob_size;
-        alloc = list->allocated;
+    if (!PyList_Check(p))
+    {
+        printf("[ERROR] Invalid List Object\n");
+        return;
+    }
 
-        fflush(stdout);
+    size = PyList_Size(p);
+    printf("[*] Python list info\n[*] Size of the Python List = %zd\n", size);
+    printf("[*] Allocated = %zd\n", ((PyListObject *)p)->allocated);
 
-        printf("[*] Python list info\n");
-        if (strcmp(p->ob_type->tp_name, "list") != 0)
-        {
-                printf("  [ERROR] Invalid List Object\n");
-                return;
-        }
-
-        printf("[*] Size of the Python List = %ld\n", size);
-        printf("[*] Allocated = %ld\n", alloc);
-
-        for (i = 0; i < size; i++)
-        {
-                type = list->ob_item[i]->ob_type->tp_name;
-                printf("Element %ld: %s\n", i, type);
-                if (strcmp(type, "bytes") == 0)
-                        print_python_bytes(list->ob_item[i]);
-                else if (strcmp(type, "float") == 0)
-                        print_python_float(list->ob_item[i]);
-        }
+    for (i = 0; i < size; i++)
+    {
+        item = PyList_GetItem(p, i);
+        printf("Element %zd: %s\n", i, Py_TYPE(item)->tp_name);
+        if (PyBytes_Check(item))
+            print_python_bytes(item);
+        else if (PyFloat_Check(item))
+            print_python_float(item);
+    }
 }
 
+/**
+ * print_python_bytes - Prints basic info about Python bytes.
+ * @p: A PyObject byte object.
+ */
+void print_python_bytes(PyObject *p)
+{
+    Py_ssize_t size, i;
+    char *string;
 
+    if (!PyBytes_Check(p))
+    {
+        printf("[ERROR] Invalid Bytes Object\n");
+        return;
+    }
+
+    size = PyBytes_Size(p);
+    string = PyBytes_AsString(p);
+    printf("[.] bytes object info\n  size: %zd\n  trying string: %s\n", size, string);
+    printf("  first %zd bytes:", size < 10 ? size + 1 : 10);
+    for (i = 0; i < size && i < 10; i++)
+        printf(" %02x", (unsigned char)string[i]);
+    printf("\n");
+}
+
+/**
+ * print_python_float - Prints basic info about Python float.
+ * @p: A PyObject float object.
+ */
+void print_python_float(PyObject *p)
+{
+    if (!PyFloat_Check(p))
+    {
+        printf("[ERROR] Invalid Float Object\n");
+        return;
+    }
+
+    printf("[.] float object info\n  value: %f\n", PyFloat_AsDouble(p));
+}
 
